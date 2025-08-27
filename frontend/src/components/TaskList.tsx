@@ -14,22 +14,23 @@ import { Edit, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function TaskList() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '' });
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showEditDialog, setShowEditDialog] = useState(false);
+    const [newTask, setNewTask] = useState({ title: '', description: '' });
 
-  // Loading states for individual actions
-  const [creatingTask, setCreatingTask] = useState(false);
-  const [updatingTask, setUpdatingTask] = useState(false);
-  const [deletingTask, setDeletingTask] = useState<string | null>(null);
-  const [togglingTask, setTogglingTask] = useState<string | null>(null);
+    // Loading states for individual actions
+    const [creatingTask, setCreatingTask] = useState(false);
+    const [updatingTask, setUpdatingTask] = useState(false);
+    const [deletingTask, setDeletingTask] = useState<string | null>(null);
+    const [togglingTask, setTogglingTask] = useState<string | null>(null);
 
-  // Dialog-specific error states
-  const [createDialogError, setCreateDialogError] = useState('');
-  const [editDialogError, setEditDialogError] = useState('');
+    // Dialog-specific error states
+    const [createDialogError, setCreateDialogError] = useState('');
+    const [editDialogError, setEditDialogError] = useState('');
 
   useEffect(() => {
     loadTasks();
@@ -72,32 +73,33 @@ export function TaskList() {
     }
   };
 
-  const handleUpdateTask = async () => {
-    if (!editingTask) return;
+    const handleUpdateTask = async () => {
+        if (!editingTask) return;
 
-    // Client-side validation
-    if (!editingTask.title || !editingTask.title.trim()) {
-      setEditDialogError('Task title cannot be empty');
-      return;
-    }
+        // Client-side validation
+        if (!editingTask.title || !editingTask.title.trim()) {
+            setEditDialogError('Task title cannot be empty');
+            return;
+        }
 
-    try {
-      setUpdatingTask(true);
-      setEditDialogError(''); // Clear any previous errors
-      const updatedTask = await apiClient.updateTask(editingTask.id, {
-        title: editingTask.title.trim(),
-        description: editingTask.description,
-      });
-      setTasks(tasks.map(task =>
-        task.id === editingTask.id ? updatedTask : task
-      ));
-      setEditingTask(null);
-    } catch (err) {
-      setEditDialogError(err instanceof Error ? err.message : 'Failed to update task');
-    } finally {
-      setUpdatingTask(false);
-    }
-  };
+        try {
+            setUpdatingTask(true);
+            setEditDialogError(''); // Clear any previous errors
+            const updatedTask = await apiClient.updateTask(editingTask.id, {
+                title: editingTask.title.trim(),
+                description: editingTask.description,
+            });
+            setTasks(tasks.map(task =>
+                task.id === editingTask.id ? updatedTask : task
+            ));
+            setEditingTask(null);
+            setShowEditDialog(false); // Close the dialog after successful update
+        } catch (err) {
+            setEditDialogError(err instanceof Error ? err.message : 'Failed to update task');
+        } finally {
+            setUpdatingTask(false);
+        }
+    };
 
   const handleCreateTask = async () => {
     // Client-side validation
@@ -234,69 +236,73 @@ export function TaskList() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                                         <Dialog onOpenChange={(open) => {
-                       if (!open) {
-                         setEditDialogError('');
-                         setEditingTask(null);
-                       }
-                     }}>
-                       <DialogTrigger asChild>
-                                                 <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setEditingTask(task)}
-                           disabled={updatingTask}
-                         >
-                           {updatingTask ? (
-                             <Spinner size="sm" />
-                           ) : (
-                             <Edit className="w-4 h-4" />
-                           )}
-                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Task</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-title">Title</Label>
-                            <Input
-                              id="edit-title"
-                              value={editingTask?.title || ''}
-                              onChange={(e) => setEditingTask(editingTask ? { ...editingTask, title: e.target.value } : null)}
-                              required
-                            />
-                          </div>
-                                                     <div className="space-y-2">
-                             <Label htmlFor="edit-description">Description</Label>
-                             <Textarea
-                               id="edit-description"
-                               value={editingTask?.description || ''}
-                               onChange={(e) => setEditingTask(editingTask ? { ...editingTask, description: e.target.value } : null)}
-                             />
-                           </div>
+                    <div className="flex space-x-2">
+                        <Dialog open={showEditDialog} onOpenChange={(open) => {
+                            setShowEditDialog(open);
+                            if (!open) {
+                                setEditDialogError('');
+                                setEditingTask(null);
+                            }
+                        }}>
+                            <DialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setEditingTask(task);
+                                        setShowEditDialog(true);
+                                    }}
+                                    disabled={updatingTask}
+                                >
+                                    {updatingTask ? (
+                                        <Spinner size="sm" />
+                                    ) : (
+                                        <Edit className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Edit Task</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-title">Title</Label>
+                                        <Input
+                                            id="edit-title"
+                                            value={editingTask?.title || ''}
+                                            onChange={(e) => setEditingTask(editingTask ? { ...editingTask, title: e.target.value } : null)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-description">Description</Label>
+                                        <Textarea
+                                            id="edit-description"
+                                            value={editingTask?.description || ''}
+                                            onChange={(e) => setEditingTask(editingTask ? { ...editingTask, description: e.target.value } : null)}
+                                        />
+                                    </div>
 
-                           {editDialogError && (
-                             <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                               {editDialogError}
-                             </div>
-                           )}
+                                    {editDialogError && (
+                                        <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                                            {editDialogError}
+                                        </div>
+                                    )}
 
-                           <Button onClick={handleUpdateTask} className="w-full" disabled={updatingTask}>
-                             {updatingTask ? (
-                               <>
-                                 <Spinner size="sm" className="mr-2" />
-                                 Updating...
-                               </>
-                             ) : (
-                               'Update Task'
-                             )}
-                           </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                                    <Button onClick={handleUpdateTask} className="w-full" disabled={updatingTask}>
+                                        {updatingTask ? (
+                                            <>
+                                                <Spinner size="sm" className="mr-2" />
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            'Update Task'
+                                        )}
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                                              <Button
                            variant="outline"
                            size="sm"

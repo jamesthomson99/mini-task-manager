@@ -14,11 +14,18 @@ async def create_task(
     task: TaskCreate,
     current_user: User = Depends(get_current_user)
 ):
+    # Additional validation for title
+    if not task.title or not task.title.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Task title cannot be empty"
+        )
+
     supabase = get_supabase()
 
     task_data = {
         "id": str(uuid.uuid4()),
-        "title": task.title,
+        "title": task.title.strip(),
         "description": task.description,
         "status": task.status.value,
         "user_id": current_user.id,
@@ -103,7 +110,13 @@ async def update_task(
     update_data = {"updated_at": datetime.utcnow().isoformat()}
 
     if task_update.title is not None:
-        update_data["title"] = task_update.title
+        # Additional validation for title
+        if not task_update.title.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task title cannot be empty"
+            )
+        update_data["title"] = task_update.title.strip()
     if task_update.description is not None:
         update_data["description"] = task_update.description
     if task_update.status is not None:

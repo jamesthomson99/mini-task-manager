@@ -27,6 +27,10 @@ export function TaskList() {
   const [deletingTask, setDeletingTask] = useState<string | null>(null);
   const [togglingTask, setTogglingTask] = useState<string | null>(null);
 
+  // Dialog-specific error states
+  const [createDialogError, setCreateDialogError] = useState('');
+  const [editDialogError, setEditDialogError] = useState('');
+
   useEffect(() => {
     loadTasks();
   }, []);
@@ -71,10 +75,17 @@ export function TaskList() {
   const handleUpdateTask = async () => {
     if (!editingTask) return;
 
+    // Client-side validation
+    if (!editingTask.title || !editingTask.title.trim()) {
+      setEditDialogError('Task title cannot be empty');
+      return;
+    }
+
     try {
       setUpdatingTask(true);
+      setEditDialogError(''); // Clear any previous errors
       const updatedTask = await apiClient.updateTask(editingTask.id, {
-        title: editingTask.title,
+        title: editingTask.title.trim(),
         description: editingTask.description,
       });
       setTasks(tasks.map(task =>
@@ -82,24 +93,31 @@ export function TaskList() {
       ));
       setEditingTask(null);
     } catch (err) {
-      setError('Failed to update task');
+      setEditDialogError(err instanceof Error ? err.message : 'Failed to update task');
     } finally {
       setUpdatingTask(false);
     }
   };
 
   const handleCreateTask = async () => {
+    // Client-side validation
+    if (!newTask.title || !newTask.title.trim()) {
+      setCreateDialogError('Task title cannot be empty');
+      return;
+    }
+
     try {
       setCreatingTask(true);
+      setCreateDialogError(''); // Clear any previous errors
       const createdTask = await apiClient.createTask({
-        title: newTask.title,
+        title: newTask.title.trim(),
         description: newTask.description,
       });
       setTasks([...tasks, createdTask]);
       setNewTask({ title: '', description: '' });
       setShowCreateDialog(false);
     } catch (err) {
-      setError('Failed to create task');
+      setCreateDialogError(err instanceof Error ? err.message : 'Failed to create task');
     } finally {
       setCreatingTask(false);
     }
@@ -113,7 +131,13 @@ export function TaskList() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">My Tasks</h1>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                 <Dialog open={showCreateDialog} onOpenChange={(open) => {
+           setShowCreateDialog(open);
+           if (!open) {
+             setCreateDialogError('');
+             setNewTask({ title: '', description: '' });
+           }
+         }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -125,25 +149,33 @@ export function TaskList() {
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="new-title">Title</Label>
                 <Input
                   id="new-title"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                   placeholder="Enter task title"
+                  required
                 />
               </div>
-              <div>
-                <Label htmlFor="new-description">Description</Label>
-                <Textarea
-                  id="new-description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  placeholder="Enter task description"
-                />
-              </div>
-                             <Button onClick={handleCreateTask} className="w-full" disabled={creatingTask}>
+                             <div className="space-y-2">
+                 <Label htmlFor="new-description">Description</Label>
+                 <Textarea
+                   id="new-description"
+                   value={newTask.description}
+                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                   placeholder="Enter task description"
+                 />
+               </div>
+
+               {createDialogError && (
+                 <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                   {createDialogError}
+                 </div>
+               )}
+
+               <Button onClick={handleCreateTask} className="w-full" disabled={creatingTask}>
                  {creatingTask ? (
                    <>
                      <Spinner size="sm" className="mr-2" />
@@ -203,8 +235,13 @@ export function TaskList() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
+                                         <Dialog onOpenChange={(open) => {
+                       if (!open) {
+                         setEditDialogError('');
+                         setEditingTask(null);
+                       }
+                     }}>
+                       <DialogTrigger asChild>
                                                  <Button
                            variant="outline"
                            size="sm"
@@ -223,23 +260,31 @@ export function TaskList() {
                           <DialogTitle>Edit Task</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div>
+                          <div className="space-y-2">
                             <Label htmlFor="edit-title">Title</Label>
                             <Input
                               id="edit-title"
                               value={editingTask?.title || ''}
                               onChange={(e) => setEditingTask(editingTask ? { ...editingTask, title: e.target.value } : null)}
+                              required
                             />
                           </div>
-                          <div>
-                            <Label htmlFor="edit-description">Description</Label>
-                            <Textarea
-                              id="edit-description"
-                              value={editingTask?.description || ''}
-                              onChange={(e) => setEditingTask(editingTask ? { ...editingTask, description: e.target.value } : null)}
-                            />
-                          </div>
-                                                     <Button onClick={handleUpdateTask} className="w-full" disabled={updatingTask}>
+                                                     <div className="space-y-2">
+                             <Label htmlFor="edit-description">Description</Label>
+                             <Textarea
+                               id="edit-description"
+                               value={editingTask?.description || ''}
+                               onChange={(e) => setEditingTask(editingTask ? { ...editingTask, description: e.target.value } : null)}
+                             />
+                           </div>
+
+                           {editDialogError && (
+                             <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                               {editDialogError}
+                             </div>
+                           )}
+
+                           <Button onClick={handleUpdateTask} className="w-full" disabled={updatingTask}>
                              {updatingTask ? (
                                <>
                                  <Spinner size="sm" className="mr-2" />

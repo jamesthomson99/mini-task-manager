@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -22,7 +22,7 @@ class User(UserBase):
         from_attributes = True
 
 class TaskBase(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1, description="Task title cannot be empty")
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.PENDING
 
@@ -30,7 +30,7 @@ class TaskCreate(TaskBase):
     pass
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, description="Task title cannot be empty")
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
 

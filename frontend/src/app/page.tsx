@@ -1,20 +1,25 @@
 'use client';
 
-import { LoginForm } from '@/components/LoginForm';
-import { RegisterForm } from '@/components/RegisterForm';
 import { TaskList } from '@/components/TaskList';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export default function Home() {
+export default function Dashboard() {
   const { user, loading, logout } = useAuth();
-  const [showRegister, setShowRegister] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user && !loading) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   const handleLogout = () => {
     logout();
-    setShowRegister(false);
+    router.push('/login');
   };
 
   if (loading) {
@@ -29,17 +34,7 @@ export default function Home() {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md">
-          {showRegister ? (
-            <RegisterForm onSwitchToLogin={() => setShowRegister(false)} />
-          ) : (
-            <LoginForm onSwitchToRegister={() => setShowRegister(true)} />
-          )}
-        </div>
-      </div>
-    );
+    return null; // Will redirect to login page
   }
 
   return (
